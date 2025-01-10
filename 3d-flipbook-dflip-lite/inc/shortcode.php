@@ -262,6 +262,10 @@ class DFlip_ShortCode {
       $source_type = $post_data['source_type'];
       $pdf_source = $post_data['pdf_source'];
 
+      //sanitize saved outline
+      if(is_array($post_data['outline'])){
+        $post_data['outline'] = $this->array_outline_escaped($post_data['outline']);
+      }
       $post_data['source'] = '';
 
       if ( $source_type == 'pdf' ) {
@@ -389,7 +393,41 @@ class DFlip_ShortCode {
 
     return $html;
   }
-
+  
+  
+  /**
+   * escapes and returns values of an outline array. The values should be text, number and urls only
+   *
+   * @param array $arr Array to be sanitized and escaped
+   *
+   * @return array sanitized array
+   * @since 2.3.53
+   *
+   */
+  private function array_outline_escaped( $arr = array() ) {
+    
+    if ( is_null( $arr ) ) {
+      return array();
+    }
+    foreach ( (array) $arr as $k => $val ) {
+      if ( is_array( $val ) ) {
+        $arr[ $k ] = $this->array_outline_escaped( $val );
+      } else if ( $k == "title" ) {
+        $arr[ $k ] = esc_html( $val );
+      } else if ( $k == "dest" ) {
+        if ( is_numeric( $arr[ $k ] ) ) {
+          $arr[ $k ] = esc_html( $val );
+        } else {
+          $arr[ $k ] = esc_url( $val );
+        }
+      }else{
+        return "";
+      }
+    }
+    
+    return $arr;
+    
+  }
 
   /**
    * Returns the singleton instance of the class.
