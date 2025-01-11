@@ -179,15 +179,9 @@ class DFlip_ShortCode {
     $share_slug = $base->get_config( 'share_slug' );
 
     $post_data = array();
-
-    $help_info = '';
+		
     //pull post data if available for the script part only
     if ( !empty( $post_id ) && is_numeric( $post_id ) ) {
-
-      /*			$post = get_post( $post_id );
-            if ( $post == null ) {
-              return '';
-            }*/
 
       $id = 'df_' . $post_id;
 
@@ -261,11 +255,7 @@ class DFlip_ShortCode {
 
       $source_type = $post_data['source_type'];
       $pdf_source = $post_data['pdf_source'];
-
-      //sanitize saved outline
-      if(is_array($post_data['outline'])){
-        $post_data['outline'] = $this->array_outline_escaped($post_data['outline']);
-      }
+			
       $post_data['source'] = '';
 
       if ( $source_type == 'pdf' ) {
@@ -294,6 +284,7 @@ class DFlip_ShortCode {
         $post_data['source'] = $source_list;
       }
 
+			//cleanup unnecessary data
       unset( $post_data['pages'] );
       unset( $post_data['pdf_source'] );
       unset( $post_data['pdf_thumb'] );
@@ -302,17 +293,15 @@ class DFlip_ShortCode {
       unset( $post_data['class'] );
       unset( $post_data['id'] );
 
+			//remove any data that is global and is redundant
       foreach ( $post_data as $key => $value ) {
         if ( $value === "" || $value === null || $value == "global" ) {//newly added will be null in old post
           unset( $post_data[ $key ] );
         }
       }
-      //			$attr['slug'] = $post->post_name;
-
-      $help_tip = ""; //todo remove
-      $help_info = ''; //todo remove
       $html_attr['_slug'] = get_post( $post_id )->post_name;
-    } else {
+    }
+		else {
       /*handled by new attribute support*/
     }
 
@@ -323,16 +312,12 @@ class DFlip_ShortCode {
     } else if ( $share_slug == 'true' ) {
       $html_attr['slug'] = get_post( $post_id )->post_name;
     }
-
-
+		
     if ( empty( $title ) ) {
       $title = "Open Book";
     }
 
-    //		if (0 === strpos($data['source'], '/wp-content/')) {
-    //			$data['source'] = get_site_url() . $data['source'];
-    //		}
-
+		//Region Escape and output variables
     /*Attribute overrides*/
     $attrHTML = ' ';
 
@@ -369,22 +354,21 @@ class DFlip_ShortCode {
     }
 
     $html = "";
-
-
     if ( $type == 'thumb' || $type == 'button' ) {
       $html = '<div class="_df_' . $type . ' ' . esc_attr( $class ) . '" id="' . esc_attr( $id ) . '" ' . $attrHTML . '>' . esc_attr( $title ) . '</div>';
     }
-    //
-    //
     else {
-
       $html = '<div class="_df_book df-lite' . esc_attr( $class ) . '" id="' . esc_attr( $id ) . '" ' . $attrHTML . '></div>';
     }
 
     if ( count( $post_data ) > 0 ) {
-
+	    
+	    //escape saved outline
+	    if(is_array($post_data['outline'])){
+		    $post_data['outline'] = $this->array_outline_escaped($post_data['outline']);
+	    }
+			
       /*Normally this occurs only when a valid post id is added*/
-
       $code = 'window.option_' . $id . ' = ' . json_encode( $post_data ) . '; if(window.DFLIP && window.DFLIP.parseBooks){window.DFLIP.parseBooks();}';
 
       $html .= '<script class="df-shortcode-script" nowprocket type="application/javascript">' . $code . '</script>';
