@@ -369,7 +369,7 @@ class DFlip_ShortCode {
 	    }
 			
       /*Normally this occurs only when a valid post id is added*/
-      $code = 'window.option_' . $id . ' = ' . json_encode( $post_data ) . '; if(window.DFLIP && window.DFLIP.parseBooks){window.DFLIP.parseBooks();}';
+      $code = 'window.option_' . esc_js($id) . ' = ' . json_encode( $post_data ) . '; if(window.DFLIP && window.DFLIP.parseBooks){window.DFLIP.parseBooks();}';
 
       $html .= '<script class="df-shortcode-script" nowprocket type="application/javascript">' . $code . '</script>';
 
