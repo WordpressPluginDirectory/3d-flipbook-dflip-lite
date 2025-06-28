@@ -437,8 +437,9 @@ function _instanceof(left, right) {
 ;// CONCATENATED MODULE: ./src/js/dearviewer/defaults.js
 /* globals jQuery */ var defaults_DEARVIEWER = {
     jQuery: jQuery,
-    version: '2.3.57',
+    version: '2.3.67',
     autoDetectLocation: true,
+    _isHashTriggered: false,
     slug: undefined,
     locationVar: "dearViewerLocation",
     locationFile: undefined,
@@ -671,7 +672,7 @@ defaults_DEARVIEWER._defaults = {
         'facebook': 'https://www.facebook.com/sharer/sharer.php?u={{url}}&t={{mailsubject}}',
         'twitter': 'https://twitter.com/share?url={{url}}&text={{mailsubject}}',
         'mail': undefined,
-        'whatsapp': 'https://api.whatsapp.com/send/?text={{mailsubject}}+{{url}}&type=custom_url&app_absent=0',
+        'whatsapp': 'https://api.whatsapp.com/send/?text={{mailsubject}}+{{url}}&app_absent=0',
         'linkedin': 'https://www.linkedin.com/shareArticle?url={{url}}&title={{mailsubject}}',
         'pinterest': 'https://www.pinterest.com/pin/create/button/?url={{url}}&media=&description={{mailsubject}}'
     },
@@ -1281,9 +1282,10 @@ utils.detectHash = function() {
     if (prefixes.indexOf("") == -1) prefixes.push("");
     Array.prototype.forEach.call(prefixes, function(prefix) {
         var hash = defaults_DEARVIEWER.preParseHash;
-        if (hash && hash.indexOf(prefix) >= 0 && defaults_DEARVIEWER.hashFocusBookFound === false) {
-            if (prefix.length > 0) {
-                hash = hash.split(prefix)[1];
+        var hashedPrefix = "#" + prefix;
+        if (hash && hash.indexOf(hashedPrefix) >= 0 && defaults_DEARVIEWER.hashFocusBookFound === false) {
+            if (hashedPrefix.length > 1) {
+                hash = hash.split(hashedPrefix)[1];
             }
             var id = hash.split('/')[0].replace("#", "");
             if (id.length > 0) {
@@ -1309,7 +1311,7 @@ utils.detectHash = function() {
                     var app = defaults_DEARVIEWER.activeLightBox && defaults_DEARVIEWER.activeLightBox.app || book.data("df-app");
                     if (app != null) {
                         app.gotoPage(page);
-                        app.hashNavigationEnabled = true;
+                        // app.hashNavigationEnabled = true;
                         utils.focusHash(app.element);
                         return false;
                     } else if (page != null) {
@@ -1319,7 +1321,9 @@ utils.detectHash = function() {
                     }
                     book.addClass("df-hash-focused", true);
                     if (book.data('lightbox') != null || book.data('df-lightbox') != null) {
+                        defaults_DEARVIEWER._isHashTriggered = true;
                         book.trigger("click");
+                        defaults_DEARVIEWER._isHashTriggered = false;
                     } else if (book.attr("href") != null && book.attr("href").indexOf(".pdf") > -1) {
                         book.trigger("click");
                     }
@@ -9669,8 +9673,10 @@ var UI = /*#__PURE__*/ function() {
                     // jQuery(this).toggleClass(buttonClass + " " + uiClass + "-widthfit ");
                     });
                 }
-                ui.shareBox = new DV_Share(app.container, app.options);
                 this.share = controls.share = controls_utils.createBtn('share', icons['share'], text.share).on("click", function() {
+                    if (ui.shareBox == null) {
+                        ui.shareBox = new DV_Share(app.container, app.options);
+                    }
                     if (ui.shareBox.isOpen === true) ui.shareBox.close();
                     else {
                         ui.shareBox.update(app.getURLHash());
@@ -10408,11 +10414,13 @@ defaults_DEARVIEWER.openLightBox = function openLightBox(app) {
                 defaults_DEARVIEWER.activeLightBox.app = controls_jQuery(defaults_DEARVIEWER.activeLightBox.element).dearviewer({
                     transparent: false,
                     isLightBox: true,
-                    hashNavigationEnabled: true,
+                    // hashNavigationEnabled: true,
                     height: "100%",
                     dataElement: app
                 });
-                history.pushState({}, null, "#");
+                if (defaults_DEARVIEWER._isHashTriggered !== true) {
+                    history.pushState(null, null, "#");
+                }
                 defaults_DEARVIEWER.activeLightBox.lightboxWrapper.toggleClass("df-lightbox-padded", defaults_DEARVIEWER.activeLightBox.app.options.popupFullsize === false);
                 defaults_DEARVIEWER.activeLightBox.lightboxWrapper.toggleClass("df-rtl", defaults_DEARVIEWER.activeLightBox.app.options.readDirection === defaults_DEARVIEWER.READ_DIRECTION.RTL);
                 defaults_DEARVIEWER.activeLightBox.backGround.css({
@@ -10433,18 +10441,18 @@ defaults_DEARVIEWER.checkBrowserURLforDefaults = function() {
         defaults_DEARVIEWER.defaults.is3D = is3D === "true";
     }
 };
-defaults_DEARVIEWER.checkBrowserURLforPDF = function() {
-    var openFlipbook = arguments.length > 0 && arguments[0] !== void 0 ? arguments[0] : false;
-    if (controls_utils.isIEUnsupported) return;
-    var pdf = new URL(location.href).searchParams.get('pdf-source');
-    if (pdf) {
-        pdf = decodeURI(pdf);
-        if (openFlipbook) {
-            defaults_DEARVIEWER.openURL(pdf);
-        }
-    }
-    return pdf;
-};
+//Unsafe can lead to XSS vulnerability
+// DEARVIEWER.checkBrowserURLforPDF = function (openFlipbook = false) {
+//   if (utils.isIEUnsupported) return;
+//   let pdf = (new URL(location.href)).searchParams.get('pdf-source');
+//   if (pdf) {
+//     pdf = decodeURI(pdf);
+//     if (openFlipbook) {
+//       DEARVIEWER.openURL(pdf);
+//     }
+//   }
+//   return pdf;
+// };
 //Exists if there is need for open file and other lightbox present in the same page. They cannot share same settings.
 //also is needed just be a dummy elemet for lightbox dataElement
 function createFileInput() {
@@ -11841,7 +11849,8 @@ dflip_jQuery(document).ready(function() {
     dflip_DEARFLIP.parseFallBack();
     utils.detectHash();
     dflip_DEARFLIP.parseNormalElements();
-    dflip_DEARFLIP.checkBrowserURLforPDF(true);
+    //Unsafe can lead to XSS vulnerability
+    // DEARFLIP.checkBrowserURLforPDF(true);
     dflip_DEARFLIP.executeCallback("afterDearFlipInit");
 });
 utils.finalizeOptions = function(options) {
